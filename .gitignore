@@ -44,3 +44,6 @@ nb-configuration.xml
 # TLS Certificates
 .certs/
 
+# Codex local state
+.codex
+.codex/

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.extraction.SchedulerDisabledTestProfile;
 import com.extraction.client.WazeClient;
 import com.extraction.dto.WazeAlertDto;
 import com.extraction.dto.WazeResponseDto;
@@ -14,22 +15,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@TestProfile(PollSchedulerTest.Profile.class)
+@TestProfile(SchedulerDisabledTestProfile.class)
 class PollSchedulerTest {
 
   private static final Path WAZE_SAMPLE =
@@ -41,9 +41,16 @@ class PollSchedulerTest {
 
   @Inject ObjectMapper objectMapper;
 
+  @Inject SnapshotStore snapshotStore;
+
   @InjectMock WazeClient wazeClient;
 
   @InjectMock AlertPublisher alertPublisher;
+
+  @BeforeEach
+  void resetState() {
+    snapshotStore.reset();
+  }
 
   @Test
   void scheduledPollFetchesAlertsAndRecordsSuccess() throws IOException {
@@ -116,12 +123,5 @@ class PollSchedulerTest {
   private double counterValue(String name) {
     var counter = meterRegistry.find(name).counter();
     return counter == null ? 0.0 : counter.count();
-  }
-
-  public static class Profile implements QuarkusTestProfile {
-    @Override
-    public Map<String, String> getConfigOverrides() {
-      return Map.of("quarkus.scheduler.enabled", "false");
-    }
   }
 }

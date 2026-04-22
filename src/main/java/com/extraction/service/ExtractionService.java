@@ -24,20 +24,18 @@ public class ExtractionService {
 
   @Inject AlertPublisher alertPublisher;
 
-  private Map<String, TrafficAlert> previousSnapshot = new LinkedHashMap<>();
+  @Inject SnapshotStore snapshotStore;
 
   public ExtractionResult fetchAndProcess() {
     List<WazeAlertDto> rawAlerts = wazeClient.fetchAlerts();
 
     Map<String, TrafficAlert> currentSnapshot = normalizeAlerts(rawAlerts);
 
-    SnapshotDiff snapshotDiff = SnapshotDiff.between(previousSnapshot, currentSnapshot);
+    SnapshotDiff snapshotDiff = snapshotStore.diffAndReplace(currentSnapshot);
 
     if (!snapshotDiff.newAlerts().isEmpty()) {
       alertPublisher.publishNewAlerts(snapshotDiff.newAlerts());
     }
-
-    previousSnapshot = currentSnapshot;
 
     ExtractionResult result =
         ExtractionResult.builder()
