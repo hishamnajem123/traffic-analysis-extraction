@@ -22,8 +22,6 @@ public class ExtractionService {
 
   @Inject WazeAlertMapper wazeAlertMapper;
 
-  @Inject SnapshotDiffService snapshotDiffService;
-
   @Inject AlertPublisher alertPublisher;
 
   private Map<String, TrafficAlert> previousSnapshot = new LinkedHashMap<>();
@@ -33,7 +31,7 @@ public class ExtractionService {
 
     Map<String, TrafficAlert> currentSnapshot = normalizeAlerts(rawAlerts);
 
-    SnapshotDiff snapshotDiff = snapshotDiffService.diff(previousSnapshot, currentSnapshot);
+    SnapshotDiff snapshotDiff = SnapshotDiff.between(previousSnapshot, currentSnapshot);
 
     if (!snapshotDiff.newAlerts().isEmpty()) {
       alertPublisher.publishNewAlerts(snapshotDiff.newAlerts());

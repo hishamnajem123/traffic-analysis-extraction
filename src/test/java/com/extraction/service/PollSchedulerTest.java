@@ -2,7 +2,6 @@ package com.extraction.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -11,8 +10,6 @@ import static org.mockito.Mockito.when;
 import com.extraction.client.WazeClient;
 import com.extraction.dto.WazeAlertDto;
 import com.extraction.dto.WazeResponseDto;
-import com.extraction.model.SnapshotDiff;
-import com.extraction.model.TrafficAlert;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.test.InjectMock;
@@ -22,7 +19,6 @@ import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -47,24 +43,12 @@ class PollSchedulerTest {
 
   @InjectMock WazeClient wazeClient;
 
-  @InjectMock SnapshotDiffService snapshotDiffService;
-
   @InjectMock AlertPublisher alertPublisher;
 
   @Test
   void scheduledPollFetchesAlertsAndRecordsSuccess() throws IOException {
     List<WazeAlertDto> alerts = sampleAlerts();
     when(wazeClient.fetchAlerts()).thenReturn(alerts);
-    when(snapshotDiffService.diff(anyMap(), anyMap()))
-        .thenAnswer(
-            invocation -> {
-              Map<String, TrafficAlert> currentSnapshot = invocation.getArgument(1);
-              return SnapshotDiff.builder()
-                  .newAlerts(new ArrayList<>(currentSnapshot.values()))
-                  .existingAlerts(List.of())
-                  .removedAlerts(List.of())
-                  .build();
-            });
 
     double successBefore = counterValue("waze.poll.success.total");
     double failureBefore = counterValue("waze.poll.failure.total");
@@ -74,7 +58,6 @@ class PollSchedulerTest {
     assertEquals(successBefore + 1.0, counterValue("waze.poll.success.total"));
     assertEquals(failureBefore, counterValue("waze.poll.failure.total"));
     verify(wazeClient).fetchAlerts();
-    verify(snapshotDiffService).diff(anyMap(), anyMap());
     verify(alertPublisher).publishNewAlerts(anyList());
   }
 
@@ -90,7 +73,6 @@ class PollSchedulerTest {
     assertEquals(successBefore, counterValue("waze.poll.success.total"));
     assertEquals(failureBefore + 1.0, counterValue("waze.poll.failure.total"));
     verify(wazeClient).fetchAlerts();
-    verify(snapshotDiffService, never()).diff(anyMap(), anyMap());
     verify(alertPublisher, never()).publishNewAlerts(anyList());
   }
 
@@ -105,13 +87,6 @@ class PollSchedulerTest {
               releaseFetch.await(5, TimeUnit.SECONDS);
               return List.of();
             });
-    when(snapshotDiffService.diff(anyMap(), anyMap()))
-        .thenReturn(
-            SnapshotDiff.builder()
-                .newAlerts(List.of())
-                .existingAlerts(List.of())
-                .removedAlerts(List.of())
-                .build());
 
     double skippedBefore = counterValue("waze.poll.skipped.total");
     ExecutorService executorService = Executors.newSingleThreadExecutor();
