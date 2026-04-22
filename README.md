@@ -1,62 +1,110 @@
-# extraction
+# Traffic Analysis Extraction
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+Quarkus-based service responsible for ingesting traffic alerts from Waze, normalizing them into domain models, computing snapshot diffs, and publishing new events downstream.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+---
 
-## Running the application in dev mode
+## 🧠 Responsibilities
 
-You can run your application in dev mode that enables live coding using:
+- Poll Waze Live Map API on a fixed schedule
+- Normalize raw alert payloads into TrafficAlert domain objects
+- Maintain an in-memory snapshot of active alerts
+- Compute deltas (new / existing / removed alerts)
+- Publish newly detected alerts for downstream processing
 
-```shell script
-./mvnw quarkus:dev
-```
+---
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+## 🏗️ Architecture Overview
 
-## Packaging and running the application
+PollScheduler  
+    ↓  
+ExtractionService  
+    ↓  
+WazeClient (REST client)  
+    ↓  
+WazeAlertMapper (DTO → Domain)  
+    ↓  
+SnapshotDiffService  
+    ↓  
+AlertPublisher  
 
-The application can be packaged using:
+---
 
-```shell script
-./mvnw package
-```
+## ⚙️ Tech Stack
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+- Java 21
+- Quarkus
+- Maven
+- Micrometer (metrics)
+- MapStruct (mapping)
+- Quarkus REST Client
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+---
 
-If you want to build an _über-jar_, execute the following command:
+## 🚀 Running the application
 
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
-```
+### Dev mode
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+Run:
 
-## Creating a native executable
+    ./mvnw quarkus:dev
 
-You can create a native executable using:
+Dev UI:
 
-```shell script
-./mvnw package -Dnative
-```
+    http://localhost:8080/q/dev
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+---
 
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
+## 📦 Build
 
-You can then execute your native executable with: `./target/extraction-1.0.0-SNAPSHOT-runner`
+Run:
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+    ./mvnw package
 
-## Provided Code
+Then run the app:
 
-### REST
+    java -jar target/quarkus-app/quarkus-run.jar
 
-Easily start your REST Web Services
+---
 
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+## 🐳 Docker
+
+Dockerfiles are located in:
+
+    src/main/docker/
+
+Example build:
+
+    docker build -f src/main/docker/Dockerfile.jvm -t extraction .
+
+---
+
+## 📊 Metrics
+
+Prometheus endpoint:
+
+    http://localhost:8080/q/metrics
+
+Includes:
+- poll duration
+- success / failure counts
+- skipped polls
+
+---
+
+## 🔮 Future Work
+
+- Redis-backed idempotency layer
+- RabbitMQ integration for event streaming
+- SMS notification service
+- Multi-region ingestion
+- Observability (tracing + dashboards)
+
+---
+
+## 📍 Notes
+
+- Uses jittered bounding box to avoid API caching
+- Designed as a single-responsibility ingestion microservice
+- Intended to run as part of a distributed event-driven system
+
