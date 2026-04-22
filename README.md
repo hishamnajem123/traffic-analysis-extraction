@@ -1,6 +1,7 @@
 # Traffic Analysis Extraction
 
-Quarkus-based service responsible for ingesting traffic alerts from Waze, normalizing them into domain models, computing snapshot diffs, and publishing new events downstream.
+Quarkus-based service responsible for ingesting traffic alerts from Waze, normalizing them into domain models, computing
+snapshot diffs, and publishing new events downstream.
 
 ---
 
@@ -17,16 +18,16 @@ Quarkus-based service responsible for ingesting traffic alerts from Waze, normal
 ## 🏗️ Architecture Overview
 
 PollScheduler  
-    ↓  
+↓  
 ExtractionService  
-    ↓  
+↓  
 WazeClient (REST client)  
-    ↓  
+↓  
 WazeAlertMapper (DTO → Domain)  
-    ↓  
+↓  
 SnapshotDiffService  
-    ↓  
-AlertPublisher  
+↓  
+AlertPublisher
 
 ---
 
@@ -86,6 +87,7 @@ Prometheus endpoint:
     http://localhost:8080/q/metrics
 
 Includes:
+
 - poll duration
 - success / failure counts
 - skipped polls
